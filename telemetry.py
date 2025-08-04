@@ -93,13 +93,5 @@ class TelemetryService:
 def my_callback(msg):
     print(f"Received: cmd={msg.cmd}, len={msg.len}, data={msg.data}")
 
-service = TelemetryService('/dev/ttyUSB0')
-service.set_message_callback(my_callback)
-
-txMsg = TelemetryMsg()
-txMsg.cmd = 0x06
-txMsg.len = 0
-service.telemetry_service_response(txMsg)
-
 # To stop the service:
 # service.stop()
