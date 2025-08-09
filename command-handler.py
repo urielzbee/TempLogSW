@@ -69,6 +69,12 @@ class CommandHandler:
         msg.len = 0
         self.telemetry_service.telemetry_service_response(msg)
 
+    def stream_logs(self):
+        msg = TelemetryMsg()
+        msg.cmd = 0x09  # eSTREAM_LOGS
+        msg.len = 0
+        self.telemetry_service.telemetry_service_response(msg)
+
     def process(self, msg):
         print(f"Message received: cmd=0x{msg.cmd:02X}, len={msg.len}")
         if msg.cmd == 0x01:  # eFW_VER
@@ -90,6 +96,7 @@ class CommandHandler:
             print(f"Get Log Interval Command: {msg.data[0] << 8 | msg.data[1]}")
         elif msg.cmd == 0x09:  # eSTREAM_LOGS
             print("Stream Logs Command")
+            print(f"Log Year:{msg.data[0]}, Log Month:{msg.data[1]}, Log Day:{msg.data[2]}, Log Hour:{msg.data[3]}, Log Min:{msg.data[4]}, Log Sec:{msg.data[5]}, Type:{msg.data[6]}, Value:{msg.data[7]}")
         else:
             print("Unknown Command")
 
@@ -103,3 +110,4 @@ handler.get_time()
 handler.get_temp()
 handler.set_log_interval(4)
 handler.get_log_interval()
+handler.stream_logs()
