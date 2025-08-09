@@ -63,6 +63,12 @@ class CommandHandler:
         msg.data = bytearray([(interval >> 8) & 0xFF, interval & 0xFF])
         self.telemetry_service.telemetry_service_response(msg)
 
+    def get_log_interval(self):
+        msg = TelemetryMsg()
+        msg.cmd = 0x08  # eGET_LOG_INTERVAL
+        msg.len = 0
+        self.telemetry_service.telemetry_service_response(msg)
+
     def process(self, msg):
         print(f"Message received: cmd=0x{msg.cmd:02X}, len={msg.len}")
         if msg.cmd == 0x01:  # eFW_VER
@@ -79,15 +85,15 @@ class CommandHandler:
         elif msg.cmd == 0x06:  # eTEMP
             print(f"Temperature Command: {msg.data[0]}")
         elif msg.cmd == 0x07:  # eSET_LOG_INTERVAL
-            print("Set Log Interval Command")
+            print("Set Log Interval Command ACK")
         elif msg.cmd == 0x08:  # eGET_LOG_INTERVAL
-            print("Get Log Interval Command")
+            print(f"Get Log Interval Command: {msg.data[0] << 8 | msg.data[1]}")
         elif msg.cmd == 0x09:  # eSTREAM_LOGS
             print("Stream Logs Command")
         else:
             print("Unknown Command")
 
-service = TelemetryService('/dev/ttyUSB0')
+service = TelemetryService('/dev/ttyUSB1')
 handler = CommandHandler(service)
 
 handler.get_firmware_version()
@@ -95,4 +101,5 @@ handler.get_hardware_version()
 handler.set_time()
 handler.get_time()
 handler.get_temp()
-handler.set_log_interval(2)
+handler.set_log_interval(4)
+handler.get_log_interval()
