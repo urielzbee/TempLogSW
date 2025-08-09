@@ -55,6 +55,13 @@ class CommandHandler:
         msg.cmd = 0x06  # eTEMP
         msg.len = 0
         self.telemetry_service.telemetry_service_response(msg)
+    
+    def set_log_interval(self, interval):
+        msg = TelemetryMsg()
+        msg.cmd = 0x07  # eSET_LOG_INTERVAL
+        msg.len = 2
+        msg.data = bytearray([(interval >> 8) & 0xFF, interval & 0xFF])
+        self.telemetry_service.telemetry_service_response(msg)
 
     def process(self, msg):
         print(f"Message received: cmd=0x{msg.cmd:02X}, len={msg.len}")
@@ -88,3 +95,4 @@ handler.get_hardware_version()
 handler.set_time()
 handler.get_time()
 handler.get_temp()
+handler.set_log_interval(2)
