@@ -1,6 +1,8 @@
-from PyQt6.QtWidgets import QMainWindow, QApplication, QPushButton, QComboBox, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QMainWindow, QApplication, QPushButton, QComboBox, QVBoxLayout, QWidget, QGroupBox, QHBoxLayout
 import sys
 import serial.tools.list_ports
+from telemetry import TelemetryService
+from command_handler import CommandHandler
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -15,18 +17,85 @@ class MainWindow(QMainWindow):
             if 'USB' in port.description or 'usb' in port.description or 'Serial' in port.description
         ]
 
+        #################################################################################
+        ### Create group box 1 ###
+        self.group_box1 = QGroupBox("Available USB Serial Ports")
+        layout1 = QVBoxLayout()
+
         # Create dropdown
         self.combo = QComboBox()
         self.combo.addItems(usb_serial_ports)
+        layout1.addWidget(self.combo)
 
-        # Layout
-        layout = QVBoxLayout()
-        layout.addWidget(self.combo)
+        # Create connect button
+        self.connect_button = QPushButton("Connect")
+        self.connect_button.clicked.connect(self.connect_to_device)
+        layout1.addWidget(self.connect_button)
 
-        container = QWidget()
-        container.setLayout(layout)
-        self.setCentralWidget(container)
+        # Create disconnect button
+        self.disconnect_button = QPushButton("Disconnect")
+        self.disconnect_button.clicked.connect(self.disconnect_from_device)
+        layout1.addWidget(self.disconnect_button)
+
+
+        self.group_box1.setLayout(layout1)
+        
+        #################################################################################
+        ### Create group box 2 ###
+        self.group_box2 = QGroupBox("Data")
+        layout2 = QVBoxLayout()
+        self.group_box2.setLayout(layout2)
+
+        self.temperature_label = QPushButton("Temperature: N/A")
+        layout2.addWidget(self.temperature_label)
+
+        # Request temperature button
+        self.request_temp_button = QPushButton("Request Temperature")
+        self.request_temp_button.clicked.connect(self.request_temperature)
+        layout2.addWidget(self.request_temp_button)
+
+
+        
+        # Main layout
+        main_layout = QHBoxLayout()
+        main_layout.addWidget(self.group_box1)
+        main_layout.addWidget(self.group_box2)
+
+        
+        # Wrap layout in a QWidget
+        central_widget = QWidget()
+        central_widget.setLayout(main_layout)
+
+        # Set central widget
+        self.setCentralWidget(central_widget)
+
         self.show()
+
+
+    def connect_to_device(self):
+        selected_port = self.combo.currentText()
+        if selected_port:
+            print(f"Connecting to {selected_port}...")
+            self.telemetry_service = TelemetryService(selected_port)
+            self.handler = CommandHandler(self.telemetry_service)
+        else:
+            print("No port selected.")
+
+    def disconnect_from_device(self):
+        if hasattr(self, 'telemetry_service'):
+            print("Disconnecting...")
+            temp = self.telemetry_service.stop()
+        else:
+            print("No device connected.")
+
+    def request_temperature(self):
+        if hasattr(self, 'handler'):
+            print("Requesting temperature...")
+            temp = self.handler.get_temp()
+            print(f"Temperature: {temp} °C")
+            self.temperature_label.setText(f"Temperature: {temp} °C")
+        else:
+            print("No device connected.")
 
 
 app = QApplication(sys.argv)

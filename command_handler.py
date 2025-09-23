@@ -55,6 +55,7 @@ class CommandHandler:
         msg.cmd = 0x06  # eTEMP
         msg.len = 0
         self.telemetry_service.telemetry_service_response(msg)
+        return getattr(self, 'temperature', None)
     
     def set_log_interval(self, interval):
         msg = TelemetryMsg()
@@ -96,6 +97,7 @@ class CommandHandler:
             # Add CPU temp logic if needed
         elif msg.cmd == 0x06:  # eTEMP
             print(f"Temperature Command: {msg.data[0]}")
+            self.temperature = msg.data[0]  # Return temperature value
         elif msg.cmd == 0x07:  # eSET_LOG_INTERVAL
             print("Set Log Interval Command ACK")
         elif msg.cmd == 0x08:  # eGET_LOG_INTERVAL
@@ -111,16 +113,16 @@ class CommandHandler:
         else:
             print("Unknown Command")
 
-service = TelemetryService('/dev/ttyUSB0')
-handler = CommandHandler(service)
+#service = TelemetryService('/dev/ttyUSB0')
+#handler = CommandHandler(service)
 
-handler.get_firmware_version()
-handler.get_hardware_version()
-handler.set_time()
-handler.get_time()
-handler.get_temp()
-handler.set_log_interval(1)
-handler.get_log_interval()
-handler.start_new_log()
+#handler.get_firmware_version()
+#handler.get_hardware_version()
+#handler.set_time()
+#handler.get_time()
+#handler.get_temp()
+#handler.set_log_interval(1)
+#handler.get_log_interval()
+#handler.start_new_log()
 
 #handler.stream_logs()
