@@ -49,6 +49,7 @@ class CommandHandler:
         msg.cmd = 0x04  # eGET_TIME
         msg.len = 0
         self.telemetry_service.telemetry_service_response(msg)
+        return getattr(self, 'date_time', None)
 
     def get_temp(self):
         msg = TelemetryMsg()
@@ -92,6 +93,8 @@ class CommandHandler:
             print("Set Time Command")
         elif msg.cmd == 0x04:  # eGET_TIME
             print(f"Get Time Command:{msg.data[0]}.{msg.data[1]}.{msg.data[2]} {msg.data[3]}:{msg.data[4]}:{msg.data[5]}")
+            date_str = f"{msg.data[0]+2000:04}-{msg.data[1]:02}-{msg.data[2]:02} {msg.data[3]:02}:{msg.data[4]:02}:{msg.data[5]:02}"
+            self.date_time = date_str
         elif msg.cmd == 0x05:  # eCPU_TEMP
             print("CPU Temp Command")
             # Add CPU temp logic if needed

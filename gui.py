@@ -1,4 +1,8 @@
-from PyQt6.QtWidgets import QMainWindow, QApplication, QPushButton, QComboBox, QVBoxLayout, QWidget, QGroupBox, QHBoxLayout
+from PyQt6.QtWidgets import (
+    QMainWindow, QApplication, QPushButton, QComboBox, QVBoxLayout, QWidget, QGroupBox,
+    QHBoxLayout, QDateTimeEdit, QGridLayout
+)
+from PyQt6.QtCore import QDateTime
 import sys
 import serial.tools.list_ports
 from telemetry import TelemetryService
@@ -43,19 +47,39 @@ class MainWindow(QMainWindow):
         #################################################################################
         ### Create group box 2 ###
         self.group_box2 = QGroupBox("Data")
-        layout2 = QVBoxLayout()
+        layout2 = QGridLayout()
         self.group_box2.setLayout(layout2)
 
+        # Temperature label
         self.temperature_label = QPushButton("Temperature: N/A")
-        layout2.addWidget(self.temperature_label)
+        layout2.addWidget(self.temperature_label, 0, 0)
 
         # Request temperature button
         self.request_temp_button = QPushButton("Request Temperature")
         self.request_temp_button.clicked.connect(self.request_temperature)
-        layout2.addWidget(self.request_temp_button)
+        layout2.addWidget(self.request_temp_button, 0, 1)
+
+        # Date time label
+        self.date_time_label = QPushButton("Date/Time: N/A")
+        layout2.addWidget(self.date_time_label, 1, 0)
+
+        # Request date time button
+        self.request_date_time_button = QPushButton("Request Date/Time")
+        self.request_date_time_button.clicked.connect(self.get_date_time)
+        layout2.addWidget(self.request_date_time_button, 1, 1)
+    
+        # Sync time button
+        self.sync_time_button = QPushButton("Sync PC Time to Device")
+        self.sync_time_button.clicked.connect(self.sync_time_to_device)
+        layout2.addWidget(self.sync_time_button, 2, 0)
+
+        # Delete log button (not implemented)
+        self.start_new_log_button = QPushButton("Delete Log")
+        self.start_new_log_button.clicked.connect(self.start_new_log)
+        layout2.addWidget(self.start_new_log_button, 3, 0)
 
 
-        
+
         # Main layout
         main_layout = QHBoxLayout()
         main_layout.addWidget(self.group_box1)
@@ -96,6 +120,32 @@ class MainWindow(QMainWindow):
             self.temperature_label.setText(f"Temperature: {temp} °C")
         else:
             print("No device connected.")
+
+    def get_date_time(self):
+        if hasattr(self, 'handler'):
+            print("Requesting date/time...")
+            date = self.handler.get_time()
+            print(f"Date/Time: {date}")
+            # Date/time will be printed in the command handler's process method
+            self.date_time_label.setText(f"Date/Time: {date}")
+        else:
+            print("No device connected.")
+
+    def sync_time_to_device(self):
+        if hasattr(self, 'handler'):
+            print("Syncing PC time to device...")
+            self.handler.set_time()
+        else:
+            print("No device connected.")
+
+    def start_new_log(self):
+        print("Start new log.")
+        if hasattr(self, 'handler'):
+            self.handler.start_new_log()
+        else:
+            print("No device connected.")
+
+
 
 
 app = QApplication(sys.argv)
