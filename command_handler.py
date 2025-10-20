@@ -11,10 +11,14 @@ class RTC_Time:
         self.tm_sec = 0
 
 class CommandHandler:
-    def __init__(self, telemetry_service):
+    def __init__(self, telemetry_service, callback=None):
         self.tm = RTC_Time()
         self.telemetry_service = telemetry_service
         self.telemetry_service.set_message_callback(self.process)
+        self.callback = callback
+
+    def set_callback(self, cb):
+        self.callback = cb
 
     def get_firmware_version(self):
         msg = TelemetryMsg()
@@ -49,14 +53,12 @@ class CommandHandler:
         msg.cmd = 0x04  # eGET_TIME
         msg.len = 0
         self.telemetry_service.telemetry_service_response(msg)
-        return getattr(self, 'date_time', None)
 
     def get_temp(self):
         msg = TelemetryMsg()
         msg.cmd = 0x06  # eTEMP
         msg.len = 0
         self.telemetry_service.telemetry_service_response(msg)
-        return getattr(self, 'temperature', None)
     
     def set_log_interval(self, interval):
         msg = TelemetryMsg()
@@ -94,13 +96,13 @@ class CommandHandler:
         elif msg.cmd == 0x04:  # eGET_TIME
             print(f"Get Time Command:{msg.data[0]}.{msg.data[1]}.{msg.data[2]} {msg.data[3]}:{msg.data[4]}:{msg.data[5]}")
             date_str = f"{msg.data[0]+2000:04}-{msg.data[1]:02}-{msg.data[2]:02} {msg.data[3]:02}:{msg.data[4]:02}:{msg.data[5]:02}"
-            self.date_time = date_str
+            self.callback("date_time",date_str)
         elif msg.cmd == 0x05:  # eCPU_TEMP
             print("CPU Temp Command")
             # Add CPU temp logic if needed
         elif msg.cmd == 0x06:  # eTEMP
             print(f"Temperature Command: {msg.data[0]}")
-            self.temperature = msg.data[0]  # Return temperature value
+            self.callback("temperature",msg.data[0])
         elif msg.cmd == 0x07:  # eSET_LOG_INTERVAL
             print("Set Log Interval Command ACK")
         elif msg.cmd == 0x08:  # eGET_LOG_INTERVAL
@@ -109,6 +111,7 @@ class CommandHandler:
             print("Stream Logs Command")
             if msg.len >= 8:
                 print(f"Log Year:{msg.data[0]}, Log Month:{msg.data[1]}, Log Day:{msg.data[2]}, Log Hour:{msg.data[3]}, Log Min:{msg.data[4]}, Log Sec:{msg.data[5]}, Type:{msg.data[6]}, Value:{msg.data[7]}")
+                self.callback("log",[msg.data[0], msg.data[1], msg.data[2], msg.data[3], msg.data[4], msg.data[5], msg.data[6], msg.data[7]])
             else:
                 print("Stream logs complete")
         elif msg.cmd == 0x0A:  # eSTART_NEW_LOG

@@ -1,8 +1,8 @@
 from PyQt6.QtWidgets import (
     QMainWindow, QApplication, QPushButton, QComboBox, QVBoxLayout, QWidget, QGroupBox,
-    QHBoxLayout, QDateTimeEdit, QGridLayout
+    QHBoxLayout, QDateTimeEdit, QGridLayout, QListWidgetItem, QTableWidget, QTableWidgetItem, QHeaderView, QFileDialog
 )
-from PyQt6.QtCore import QDateTime
+from PyQt6.QtCore import QDateTime, QTimer
 import sys
 import serial.tools.list_ports
 from telemetry import TelemetryService
@@ -46,7 +46,7 @@ class MainWindow(QMainWindow):
         
         #################################################################################
         ### Create group box 2 ###
-        self.group_box2 = QGroupBox("Data")
+        self.group_box2 = QGroupBox("Configuration")
         layout2 = QGridLayout()
         self.group_box2.setLayout(layout2)
 
@@ -78,14 +78,45 @@ class MainWindow(QMainWindow):
         self.start_new_log_button.clicked.connect(self.start_new_log)
         layout2.addWidget(self.start_new_log_button, 3, 0)
 
+        # Create dropdown for tiem interval
+        self.time_interval_combo = QComboBox()
+        self.time_interval_combo.addItems(["1 min", "5 min", "10 min", "30 min", "60 min"])
+        layout2.addWidget(self.time_interval_combo,4 ,0)
 
+        # Configure time interval button
+        self.time_interval_button = QPushButton("Configure time interval")
+        self.time_interval_button.clicked.connect(self.configure_time_interval)
+        layout2.addWidget(self.time_interval_button, 4, 1)
+
+        #################################################################################
+        ### Create group box 3 ###
+        self.group_box3 = QGroupBox("Data")
+        layout3 = QGridLayout()
+        self.group_box3.setLayout(layout3)
+
+        # Log data list table
+        self.table = QTableWidget(0, 0)
+        self.table.setHorizontalHeaderLabels(["Timestamp", "Temperature (°C)"])
+        self.table = QTableWidget(0, 2)
+        self.table.setHorizontalHeaderLabels(["Timestamp", "Temperature (°C)"])
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        layout3.addWidget(self.table)
+
+        # Request log data button
+        self.request_log_data_button = QPushButton("Request log data")
+        self.request_log_data_button.clicked.connect(self.request_log_data)
+        layout3.addWidget(self.request_log_data_button, 1, 0)
+
+        self.export_button = QPushButton("Export CSV")
+        self.export_button.clicked.connect(self.export_table_csv)
+        layout3.addWidget(self.export_button, 1, 2)
 
         # Main layout
         main_layout = QHBoxLayout()
         main_layout.addWidget(self.group_box1)
         main_layout.addWidget(self.group_box2)
+        main_layout.addWidget(self.group_box3)
 
-        
         # Wrap layout in a QWidget
         central_widget = QWidget()
         central_widget.setLayout(main_layout)
@@ -101,7 +132,8 @@ class MainWindow(QMainWindow):
         if selected_port:
             print(f"Connecting to {selected_port}...")
             self.telemetry_service = TelemetryService(selected_port)
-            self.handler = CommandHandler(self.telemetry_service)
+            # pass callback into the handler so it can notify the GUI
+            self.handler = CommandHandler(self.telemetry_service, callback=self.callback)
         else:
             print("No port selected.")
 
@@ -145,8 +177,55 @@ class MainWindow(QMainWindow):
         else:
             print("No device connected.")
 
+    def configure_time_interval(self):
+        if hasattr(self, 'handler'):
+            interval_text = self.time_interval_combo.currentText()
+            interval_minutes = int(interval_text.split()[0])
+            print(f"Configuring time interval to {interval_minutes} minutes...")
+            self.handler.set_log_interval(interval_minutes)
+        else:
+            print("No device connected.")
 
+    def request_log_data(self):
+        if hasattr(self, 'handler'):
+            print("Requesting log data...")
+            log_data = self.handler.stream_logs()
+            self.table.setRowCount(0)  # Clear existing data
+        else:
+            print("No device connected.")
 
+    def callback(self, event, payload):
+        if event == "temperature":
+            temp = payload
+            self.temperature_label.setText(f"Temperature: {temp} °C")
+        elif event == "date_time":
+            ts = payload
+            self.date_time_label.setText(f"Date/Time: {ts}")
+        elif event == "log":
+            log_entry = payload
+            row_position = self.table.rowCount()
+            self.table.insertRow(row_position)
+            timestamp = f"{log_entry[0]+2000:04}-{log_entry[1]:02}-{log_entry[2]:02} {log_entry[3]:02}:{log_entry[4]:02}:{log_entry[5]:02}"
+            temperature = log_entry[7]
+            timestamp_item = QTableWidgetItem(timestamp)
+            temperature_item = QTableWidgetItem(f"{temperature} °C")
+            self.table.setItem(row_position, 0, timestamp_item)
+            self.table.setItem(row_position, 1, temperature_item)
+
+    def export_table_csv(self):
+        """Open Save dialog and write CSV file."""
+        path, _ = QFileDialog.getSaveFileName(self, "Save CSV", "", "CSV Files (*.csv);;All Files (*)")
+        if not path:
+            return
+        import csv
+        cols = self.table.columnCount()
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            headers = [self.table.horizontalHeaderItem(c).text() if self.table.horizontalHeaderItem(c) else "" for c in range(cols)]
+            writer.writerow(headers)
+            for r in range(self.table.rowCount()):
+                row = [self.table.item(r, c).text() if self.table.item(r, c) else "" for c in range(cols)]
+                writer.writerow(row)
 
 app = QApplication(sys.argv)
 w = MainWindow()
