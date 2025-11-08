@@ -197,7 +197,7 @@ class MainWindow(QMainWindow):
     def callback(self, event, payload):
         if event == "temperature":
             temp = payload
-            self.temperature_label.setText(f"Temperature: {temp} °C")
+            self.temperature_label.setText(f"Temperature: {temp:.2f} °C")
         elif event == "date_time":
             ts = payload
             self.date_time_label.setText(f"Date/Time: {ts}")
@@ -208,7 +208,7 @@ class MainWindow(QMainWindow):
             timestamp = f"{log_entry[0]+2000:04}-{log_entry[1]:02}-{log_entry[2]:02} {log_entry[3]:02}:{log_entry[4]:02}:{log_entry[5]:02}"
             temperature = log_entry[7]
             timestamp_item = QTableWidgetItem(timestamp)
-            temperature_item = QTableWidgetItem(f"{temperature} °C")
+            temperature_item = QTableWidgetItem(f"{temperature:.2f}")
             self.table.setItem(row_position, 0, timestamp_item)
             self.table.setItem(row_position, 1, temperature_item)
 

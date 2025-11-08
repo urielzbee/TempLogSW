@@ -102,7 +102,10 @@ class CommandHandler:
             # Add CPU temp logic if needed
         elif msg.cmd == 0x06:  # eTEMP
             print(f"Temperature Command: {msg.data[0]}")
-            self.callback("temperature",msg.data[0])
+            t_int = msg.data[0] << 24 | (msg.data[1] << 16) | (msg.data[2] << 8) | msg.data[3]
+            t_dec = msg.data[4] << 24 | (msg.data[5] << 16) | (msg.data[6] << 8) | msg.data[7]
+            t = t_int + t_dec / 1000000.0
+            self.callback("temperature",t)
         elif msg.cmd == 0x07:  # eSET_LOG_INTERVAL
             print("Set Log Interval Command ACK")
         elif msg.cmd == 0x08:  # eGET_LOG_INTERVAL
@@ -111,7 +114,10 @@ class CommandHandler:
             print("Stream Logs Command")
             if msg.len >= 8:
                 print(f"Log Year:{msg.data[0]}, Log Month:{msg.data[1]}, Log Day:{msg.data[2]}, Log Hour:{msg.data[3]}, Log Min:{msg.data[4]}, Log Sec:{msg.data[5]}, Type:{msg.data[6]}, Value:{msg.data[7]}")
-                self.callback("log",[msg.data[0], msg.data[1], msg.data[2], msg.data[3], msg.data[4], msg.data[5], msg.data[6], msg.data[7]])
+                t_int = msg.data[7] << 24 | (msg.data[8] << 16) | (msg.data[9] << 8) | msg.data[10]
+                t_dec = msg.data[11] << 24 | (msg.data[12] << 16) | (msg.data[13] << 8) | msg.data[14]
+                t = t_int + t_dec / 1000000.0
+                self.callback("log",[msg.data[0], msg.data[1], msg.data[2], msg.data[3], msg.data[4], msg.data[5], msg.data[6], t])
             else:
                 print("Stream logs complete")
         elif msg.cmd == 0x0A:  # eSTART_NEW_LOG
